@@ -23,6 +23,7 @@ from ...ybdata import Clan_challenge, Clan_group, Clan_member, User, Clan_group_
 from ..exception import GroupError, GroupNotExist, InputError, UserError, UserNotInGroup
 from .multi_cq_utils import who_am_i
 from .image_engine import download_user_profile_image, generate_combind_boss_state_image, BossStatusImageCore, get_process_image, GroupStateBlock
+from .imageEngine.imageEngine import boss_statue_draw, state_image_generate
 
 _logger = logging.getLogger(__name__)
 FILE_PATH = Path(sys._MEIPASS).resolve() if "_MEIPASS" in dir(sys) else Path(__file__).resolve().parent
@@ -540,17 +541,20 @@ def send_remind(self,
 			message=message+f'\n=======\n{sender_name}提醒您及时完成今日出刀',
 		))
 
-#发送代刀提醒给被代刀的玩家
+
+# 发送代刀提醒给被代刀的玩家
 def behelf_remind(self, member_id, msg):
 	asyncio.ensure_future(self.send_private_remind(member_id = member_id,content = msg))
-#当前的boss状态
-def boss_status_summary(self, group_id:Groupid) -> str:
-	boss_summary = self.challenger_info(group_id)
+
+
+# 当前的boss状态
+def boss_status_summary(self, group_id:Groupid, user_id:Optional[int] = 0) -> str:
+	boss_summary = self.challenger_info(group_id, user_id)
 
 	return boss_summary
 
 
-#报刀
+# 报刀
 def challenge(self,
 				group_id: Groupid,
 				qqid: QQid,
@@ -1334,14 +1338,22 @@ def challenger_info_small(self, group:Clan_group, boss_num, msg:List = None):
 	return msg
 
 #总出刀信息
-def challenger_info(self, group_id):
+def challenger_info(self, group_id, user_id):
 	"""
 	Args:
 		group: 公会信息对象
 	"""
+	clanInfo = {
+		"finishChallengeCount": 0,
+		"halfChallengeCount": 0,
+		"levelCycle": 0,
+		"bossCycle": 0,
+		"clanRank": 0,
+		"selfRank": 0
+	}
 	group:Clan_group = get_clan_group(self, group_id)
 	if group is None : raise GroupNotExist
-	date, _ = pcr_datetime(area = group.game_server)
+	date = (pcr_datetime(area = group.game_server))[0]
 	challenges:List[Clan_challenge] = Clan_challenge.select().where(
 		Clan_challenge.gid == group_id,
 		Clan_challenge.bid == group.battle_id,
@@ -1359,84 +1371,82 @@ def challenger_info(self, group_id):
 			end_blade_qqid[c.qqid] -= 1
 			if end_blade_qqid[c.qqid] == 0: del end_blade_qqid[c.qqid]
 
-	finish_challenge_count = sum(bool(c.boss_health_remain or c.is_continue) for c in challenges)
+	clanInfo["finishChallengeCount"] = sum(bool(c.boss_health_remain or c.is_continue) for c in challenges)
 
-	half_challenge_list:Dict[str, Any] = {"style-background-color": (240,240,240)}
+	half_challenge_list:Dict[str, Any] = {}
 	for qqid, num in end_blade_qqid.items() :
 		if num < 0:
 			continue
-		half_challenge_list[str(qqid)] = f'{self._get_nickname_by_qqid(qqid)[:4]}'+ (f' x {num}' if num else '')
+		half_challenge_list[str(qqid)] = f'{self._get_nickname_by_qqid(qqid)}'+ (f' x {num}' if num else '')
 
 	challenging_list = safe_load_json(group.challenging_member_list)
 	group_boss_data = self._boss_data_dict(group)
-	boss_state_image_list:List[Union[Image.Image, BossStatusImageCore]] = []
+	boss_state_image_list = []
 	subscribe_handler = SubscribeHandler(group=group)
-	
-	for boss_num in range(1,6):
+
+	clanInfo["halfChallengeCount"] =len(half_challenge_list)
+
+	# print(group_boss_data)
+
+	for boss_num in range(1, 6):
 		this_boss_data = group_boss_data[boss_num]
 		boss_num_str = str(boss_num)
 		extra_info = {
-			"预约":{"style-background-color": (179, 229, 252)},
-			"挑战":{"style-background-color": (255, 249, 196)},
+			"预约": {},
+			"挑战": {},
 		}
 		if challenging_list and boss_num_str in challenging_list:
 			for challenger, info in challenging_list[boss_num_str].items():
 				challenger = str(challenger)
-				challenger_nickname = self._get_nickname_by_qqid(challenger)[:4]
+				challenger_nickname = self._get_nickname_by_qqid(challenger)
 				challenger_msg = challenger_nickname
 				if info['is_continue']:
 					challenger_msg += '(补)'
 				if info['behalf']:
-					behalf = self._get_nickname_by_qqid(info['behalf'])[:4]
+					behalf = self._get_nickname_by_qqid(info['behalf'])
 					challenger_msg += f'({behalf}代)'
 				if (0 if info['damage'] is None else info['damage']) > 0:
 					challenger_msg += f'@{info["s"]}s,{info["damage"]}w'
 				if info['tree']:
-					challenger_msg += '(挂树)'
 					if "挂树" not in extra_info:
-						extra_info["挂树"] = {"style-background-color": (255, 205, 210)}
+						extra_info["挂树"] = {}
 					extra_info["挂树"][challenger] = challenger_nickname
 				extra_info["挑战"][challenger] = challenger_msg
 		
 		if boss_num in subscribe_handler.data:
 			subscribe_list = subscribe_handler.data[boss_num]
 			for user_id, note in subscribe_list.items():
-				extra_info["预约"][str(user_id)] = self._get_nickname_by_qqid(user_id)[:4] + (f":{note}" if note else "")
-
-		boss_state_image_list.append(BossStatusImageCore(
-			this_boss_data['cycle'], 
-			this_boss_data["health"],
-			this_boss_data["full_health"],
-			boss_num_str + '-' + this_boss_data["name"],
-			this_boss_data["icon_id"],
-			extra_info,
-			this_boss_data['is_next']
-		))
-	level_cycle = self._level_by_cycle(group.boss_cycle, group.game_server)
-	try:
-		_bg_color = [(132, 1, 244), (115, 166, 231), (206, 105, 165), (206, 80, 66), (181, 105, 206)][level_cycle]
-	except IndexError:
-		_bg_color = (181, 105, 206)
-	process_image = get_process_image(
-		[
-			GroupStateBlock(
-				title_text="完整刀",
-				data_text=str(finish_challenge_count),
-				title_color=(0, 0, 0),
-				data_color=(255, 0, 0),
-				background_color=(255, 205, 210),
-			),
-			GroupStateBlock(
-				title_text="阶段",
-				data_text=chr(65+level_cycle),
-				title_color=(255, 255, 255),
-				data_color=(255, 255, 255),
-				background_color=_bg_color,
-			),
-		],
-		{"补偿": half_challenge_list}
-	)
-	result_image = generate_combind_boss_state_image([process_image, *boss_state_image_list])
+				extra_info["预约"][str(user_id)] = self._get_nickname_by_qqid(user_id) + (f":{note}" if note else "")
+		# print(extra_info)
+		boss_state_image_list.append(boss_statue_draw(group_boss_data[boss_num]['icon_id'], extra_info))
+	clanInfo["levelCycle"] = self._level_by_cycle(group.boss_cycle, group.game_server)
+	clanInfo["bossCycle"] = group.boss_cycle
+	# try:
+	# 	_bg_color = [(132, 1, 244), (115, 166, 231), (206, 105, 165), (206, 80, 66), (181, 105, 206)][level_cycle]
+	# except IndexError:
+	# 	_bg_color = (181, 105, 206)
+	# process_image = get_process_image(
+	# 	[
+	# 		GroupStateBlock(
+	# 			title_text="完整刀",
+	# 			data_text=str(finish_challenge_count),
+	# 			title_color=(0, 0, 0),
+	# 			data_color=(255, 0, 0),
+	# 			background_color=(255, 205, 210),
+	# 		),
+	# 		GroupStateBlock(
+	# 			title_text="阶段",
+	# 			data_text=chr(65+level_cycle),
+	# 			title_color=(255, 255, 255),
+	# 			data_color=(255, 255, 255),
+	# 			background_color=_bg_color,
+	# 		),
+	# 	],
+	# 	{"补偿": half_challenge_list}
+	# )
+	# # process_image.show()
+	# result_image = generate_combind_boss_state_image([process_image, *boss_state_image_list])
+	result_image = state_image_generate(group_boss_data, boss_state_image_list, clanInfo, group_id, user_id)
 	if result_image.mode != "RGB":
 		result_image = result_image.convert("RGB")
 	bio = BytesIO()

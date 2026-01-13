@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import sys
+import json
 import configparser
 from pathlib import Path
 from typing import Any, Dict
@@ -16,10 +17,11 @@ from ..exception import ClanBattleError, InputError, GroupNotExist
 from ..util import atqq
 from .define import Commands, Server
 from .image_engine import download_missing_user_profile, image_engine_init
+from .imageEngine.imageEngine import download_missing_user_profile
 from .multi_cq_utils import refresh
 
 _logger = logging.getLogger(__name__)
-
+clanInfoPath = Path(__file__).parent.joinpath("./imageEngine/clanInfo/clanInfo.json")
 
 #初始化
 def init(self,
@@ -145,7 +147,7 @@ def execute(self, match_num, ctx):
 	elif match_num == 3:  # 状态
 		if cmd != '状态': return
 		try: 
-			boss_summary = self.boss_status_summary(group_id)
+			boss_summary = self.boss_status_summary(group_id, user_id)
 			asyncio.ensure_future(download_missing_user_profile())
 		except ClanBattleError as e:
 			return str(e)
@@ -426,6 +428,29 @@ def execute(self, match_num, ctx):
 			_logger.info('群聊 失败 {} {} {}'.format(user_id, group_id, cmd))
 			return str(e)
 
+	elif match_num == 22:
+		result = re.match(r'绑定公会[:：]?\s*([^ ]+)\s*绑定会长[:：]?(.+)', cmd)
+		if not result:
+			return ("请按照“绑定公会:xxx 绑定会长:xxx”格式提交公会战排名查询信息绑定")
+		clan_name = result.group(1)
+		leader_name = result.group(2)
+		group_qqnum = str(group_id)
+		try:
+			with open(clanInfoPath, 'r', encoding='utf-8') as f:
+				file_data = json.load(f)
+			importData = {
+				group_qqnum: {
+					"clan_name": clan_name,
+					"leader_name": leader_name
+				}
+			}
+			file_data.update(importData)
+			with open(clanInfoPath, 'w', encoding='utf-8') as f:
+				json.dump(file_data, f, indent=4, ensure_ascii=False)
+			return ("绑定成功")
+		except Exception as e:
+			print(f"\n 绑定失败：{str(e)}")
+			return ("绑定失败，请联系管理员")
 
 	elif match_num == 30:  #查树
 		if len(cmd) != 2:

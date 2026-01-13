@@ -27,7 +27,7 @@ else:
                            login, marionette, settings,
                            switcher, templating, web_util, ybdata,
                            yobot_msg, custom, group_leave)
-
+from ybplugins.clan_battle.components.imageEngine.clanInfo import clanInfo
 # 本项目构建的框架非常粗糙，不建议各位把时间浪费本项目上
 # 如果想开发自己的机器人，建议直接使用 nonebot 框架
 # https://nonebot.cqp.moe/
@@ -272,6 +272,7 @@ class Yobot:
         self.plug_new = [
             group_leave.GroupLeave(**kwargs),
             custom.Custom(**kwargs),
+            clanInfo.ClanInfo(**kwargs)
         ]
 
     def active_jobs(self) -> List[Tuple[Any, Callable[[], Iterable[Dict[str, Any]]]]]:
