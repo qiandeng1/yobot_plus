@@ -484,7 +484,7 @@ def state_image_generate(groupBossData: dict, bossStateImageList: list, clanInfo
     for bossNum in range(1, 6):
         thisBossData = groupBossData[bossNum]
         # try:
-        for i in range(1, 16):
+        for i in range(1, 18):
             bossId = str(bossNum * 1000 + i)
             if thisBossData["name"] == data[bossId]["cnName"]:
                 actualBossId.append(bossId)
