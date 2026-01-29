@@ -1,6 +1,38 @@
-# yobot_remix
+# yobot_plus
 
-yobot魔改版，支持新版公会战。<br>
+本项目是在yobot_remix上再度更新，QQBot回复状态按照游戏风格输出。<br>
+其实正常来说直接在remix上pr就行，但是改的有点乱，我自个单开一个方便维护。<br>
+> 示例效果
+> 
+> ![demo](https://github.com/qiandeng1/yobot_plus/blob/stable/image/demo1.jpg)
+## 目录
+- [开始使用](https://github.com/qiandeng1/yobot_plus/#开始使用)
+	- [安装](https://github.com/qiandeng1/yobot_plus/#安装)
+	- [使用](https://github.com/qiandeng1/yobot_plus/#使用)
+- [待更新内容](https://github.com/qiandeng1/yobot_plus/#待更新内容)
+
+## 开始使用
+### 安装
+
+P.S.
+yobot_remix安装方式与yobot安装方式一致，可以参考
+> [Yobot Linux 手动部署](http://yobot.win/install/Linux-gocqhttp/)
+> TBD：后续自个写个部署教程
+
+### 使用
+重启yobot_plus即可使用
+
+## 待更新内容
+ - [x] 死亡boss变成盒子而不是现在没有变化
+ - [x] 场景背景轮换（背景图片已完成，按照星座轮换）
+ - [x] 左上角公会战时间制作
+ - [x] 公会排名显示
+ - [ ] 个人排名显示（已预留接口）
+ - [ ] 优化图片生成速度
+ - [ ] 切换公会战档案时，清除上周期公会战排名
+<br>
+**下面是yobot_remix的描述。**<br>
+***
 删除了除会战外的功能（肯定有没删干净的地方）<br>
 没实战测试过，可能存在未知bug<br>
 多来点测试工程师\_(:з)∠)_<br>
