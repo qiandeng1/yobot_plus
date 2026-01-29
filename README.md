@@ -10,13 +10,14 @@
 	- [安装](https://github.com/qiandeng1/yobot_plus/#安装)
 	- [使用](https://github.com/qiandeng1/yobot_plus/#使用)
 - [待更新内容](https://github.com/qiandeng1/yobot_plus/#待更新内容)
+- [相关项目](https://github.com/qiandeng1/yobot_plus/#相关项目)
 
 ## 开始使用
 ### 安装
 
 P.S.
 yobot_remix安装方式与yobot安装方式一致，可以参考
-> [Yobot Linux 手动部署](http://yobot.win/install/Linux-gocqhttp/)
+> [Yobot Linux 手动部署](http://yobot.win/install/Linux-gocqhttp/)<br>
 > TBD：后续自个写个部署教程
 
 ### 使用
@@ -31,8 +32,12 @@ yobot_remix安装方式与yobot安装方式一致，可以参考
  - [ ] 优化图片生成速度
  - [ ] 切换公会战档案时，清除上周期公会战排名
 <br>
-**下面是yobot_remix的描述。**<br>
-***
+
+## 相关项目
+[priconne.kimura.icu](https://priconne.kimura.icu/calendar)：是一个非常非常漂亮的公主连接日程表。
+
+**下面是yobot_remix的描述。**
+******
 删除了除会战外的功能（肯定有没删干净的地方）<br>
 没实战测试过，可能存在未知bug<br>
 多来点测试工程师\_(:з)∠)_<br>
